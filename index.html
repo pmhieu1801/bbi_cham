@@ -345,7 +345,8 @@ function showScore() {
 }
 
 renderQuestion();
-document.addEventListener('keydown', function(event) {
+window.onload = function() {
+    document.addEventListener('keydown', function(event) {
     const key = event.key;
 
     // Xử lý phím 1, 2, 3, 4 để chọn đáp án
@@ -372,7 +373,8 @@ document.addEventListener('keydown', function(event) {
             showScore();
         }
     }
-});
+    });
+};
 </script>
 </body>
 </html>
