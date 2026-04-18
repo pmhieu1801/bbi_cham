@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Ôn Tập Word Giúp em Châm 10Đ</title>
+    <style>
+        .option.correct { background-color: #28a745 !important; color: white; border-color: #28a745; }
+        .option.wrong { background-color: #dc3545 !important; color: white; border-color: #dc3545; }
+        .option.disabled { cursor: not-allowed; opacity: 0.8; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 100%; max-width: 650px; }
+        h1 { text-align: center; color: #1a73e8; }
+        .question { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+        .options { list-style: none; padding: 0; }
+        .option { background: #f8f9fa; border: 1px solid #dee2e6; margin-bottom: 10px; padding: 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .option:hover { background: #e8f0fe; border-color: #1a73e8; }
+        .option.selected { background: #1a73e8; color: white; border-color: #1a73e8; }
+        #next-btn, #submit-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin-top: 20px; display: none; }
+        #next-btn { background: #1a73e8; color: white; }
+        #submit-btn { background: #34a853; color: white; }
+        #result { text-align: center; font-size: 20px; margin-top: 20px; display: none; }
+        /* Thiết lập chung cho các ảnh Loopy */
+    .loopy {
+        position: fixed;
+        width: 240px; /* Kích thước nhỏ vừa phải */
+        height: 240px;
+        background-size: contain; /* QUAN TRỌNG: giúp ảnh không bị dàn trải */
+        background-repeat: no-repeat;
+        z-index: -1;      /* Đẩy ảnh ra sau nội dung quiz */
+        opacity: 0.8;     /* Độ mờ nhẹ cho đẹp */
+        pointer-events: none; /* Không cản trở việc click vào quiz */
+    }
+
+/* Định vị 3 ảnh */
+        .loopy-1 { top: 20px; left: 20px; background-image: url('1.jpg'); }
+        .loopy-2 { top: 20px; right: 20px; background-image: url('2.jpg'); }
+        .loopy-3 { bottom: 20px; right: 20px; background-image: url('3.jpg'); }
+        .loopy-4 { bottom: 20px; left: 20px; background-image: url('4.webp'); }
+.quiz-container { 
+    background-color: #FFD1DC !important; /* Màu hồng pastel */
+    border: 3px solid #FFACC7;            /* Viền hồng để nổi bật */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Tạo bóng đổ làm nó "nổi" lên */
+    padding: 30px; 
+    border-radius: 20px; 
+    width: 100%; 
+    max-width: 650px; 
+    position: relative; /* Giúp các ảnh trang trí sau này nằm gọn trong khung */
+}
+
+/* Style cho các nút và văn bản để hợp với màu hồng */
+h1 { color: #d63384; }
+.option { background: white; border: 1px solid #FFACC7; }
+.option:hover { background: #fff0f5; }
+.option.selected { background: #ff85a2; color: white; }
+    </style>
+</head>
+
+<body>
+<div class="loopy loopy-1"></div>
+    <div class="loopy loopy-2"></div>
+    <div class="loopy loopy-3"></div>
+    <div class="loopy loopy-4"></div>
+
+    <div class="quiz-container">
+        <h1>📝 Quiz Ôn Tập Của BBI Châm lu 💖</h1>
+        <div id="quiz-box">
+            <div id="question-text" class="question"></div>
+            <ul id="options-list" class="options"></ul>
+            <button id="next-btn" onclick="nextQuestion()">Câu tiếp theo</button>
+            <button id="submit-btn" onclick="showScore()">Nộp bài</button>
+        </div>
+        <div id="result"></div>
+    </div>
+
+<script>
+    // Dữ liệu câu hỏi trích xuất từ tài liệu 
+    const allQuestions = [
+  { "q": "AI có khả năng thay thế con người trong lĩnh vực nào sau đây?", "options": ["Các công việc lặp đi lặp lại và xử lý dữ liệu", "Các công việc ra quyết định phức tạp", "Các công việc sáng tạo nghệ thuật", "Các công việc cần đồng cảm xã hội"], "answer": 0 },
+  { "q": "AI có thể được chia thành mấy cấp độ chính?", "options": ["4", "3", "2", "5"], "answer": 0 },
+  { "q": "AI có thể được ứng dụng trong lĩnh vực nào sau đây?", "options": ["Tất cả các phương án trên", "Giao thông", "Y tế", "Tài chính"], "answer": 0 },
+  { "q": "AI có thể gây ra rủi ro gì?", "options": ["Sự thiên vị dữ liệu", "Tất cả các ý trên", "Mất kiểm soát", "Mất việc làm"], "answer": 1 },
+  { "q": "AI có thể giúp con người trong việc nào sau đây?", "options": ["Xử lý dữ liệu lớn và hỗ trợ ra quyết định", "Thay thế tất cả các mối quan hệ xã hội", "Thay thế hoàn toàn trực giác con người", "Loại bỏ nhu cầu học tập"], "answer": 0 },
+  { "q": "AI có thể giúp trong việc nào sau đây?", "options": ["Chẩn đoán bệnh", "Dịch ngôn ngữ tự động", "Tất cả các đáp án trên", "Phát hiện gian lận"], "answer": 2 },
+  { "q": "AI General là gì?", "options": ["AI có thể thực hiện bất kỳ nhiệm vụ trí tuệ nào như con người", "AI chỉ hoạt động theo lệnh", "AI có thể chơi game tốt", "AI dùng cho quân sự"], "answer": 0 },
+  { "q": "AI là viết tắt của cụm từ nào sau đây?", "options": ["Automated Intelligence", "Automatic Interaction", "Artificial Intelligence", "Artificial Interface"], "answer": 2 },
+  { "q": "AI yếu (Narrow AI) là gì?", "options": ["AI có thể thay thế toàn bộ con người", "AI chỉ thực hiện được một nhiệm vụ cụ thể", "AI không hoạt động được", "AI có khả năng tư duy như con người"], "answer": 1 },
+  { "q": "ChatGPT là loại công cụ AI thuộc lĩnh vực nào?", "options": ["Dự báo giá chứng khoán", "Tạo video hoạt hình", "Nhận diện khuôn mặt", "Xử lý ngôn ngữ tự nhiên (Natural Language Processing)"], "answer": 3 },
+  { "q": "ChatGPT là ví dụ điển hình của loại AI nào?", "options": ["Narrow AI", "Super AI", "General AI", "Rule-Based AI"], "answer": 0 },
+  { "q": "Con người vượt trội hơn AI trong khả năng nào sau đây?", "options": ["Đồng cảm và giao tiếp đa chiều", "Tính toán phức tạp", "Xử lý dữ liệu lớn", "Nhận dạng mẫu"], "answer": 0 },
+  { "q": "Công cụ nào sau đây có thể dùng để tóm tắt văn bản dài bằng AI?", "options": ["NoteBookLM", "Photoshop", "Canva", "Excel"], "answer": 0 },
+  { "q": "Công cụ nào sau đây được dùng để biến mô tả văn bản thành hình ảnh minh họa?", "options": ["DALL-E", "PowerPoint", "Word", "Notion"], "answer": 0 },
+  { "q": "Công cụ nào sau đây hỗ trợ tạo câu hỏi kiểm tra và tóm tắt văn bản?", "options": ["Excel", "Canva", "ChatGPT", "Photoshop"], "answer": 2 },
+  { "q": "Công cụ nào sau đây là công cụ GenAI dùng để tạo video từ mô tả văn bản?", "options": ["Excel", "Word", "Sora (OpenAI)", "PowerPoint"], "answer": 2 },
+  { "q": "Công nghệ nào thường được dùng trong nhận diện khuôn mặt?", "options": ["Machine Learning", "Internet of Things", "Blockchain", "Deep Learning"], "answer": 3 },
+  { "q": "Công nghệ xử lý ngôn ngữ tự nhiên (NLP) dùng để?", "options": ["Chuyển văn bản thành ảnh", "Tăng tốc độ mạng", "Hiểu và xử lý ngôn ngữ của con người", "Mô phỏng vật lý"], "answer": 2 },
+  { "q": "Deep Learning là gì?", "options": ["Một loại bộ nhớ máy tính", "Một phần của trí tuệ nhân tạo sử dụng mạng nơ-ron nhân tạo nhiều lớp", "Một ứng dụng chỉnh sửa ảnh", "Một thuật toán mã hóa"], "answer": 1 },
+  { "q": "Đâu là một đặc điểm nổi bật của GenAI?", "options": ["Chỉ hoạt động trong lĩnh vực thương mại điện tử", "Luôn tạo ra nội dung dựa trên mẫu cố định", "Không ứng dụng được trong giáo dục và truyền thông", "Có khả năng tạo ra nội dung mới thay vì chỉ lựa chọn nội dung có sẵn"], "answer": 3 },
+  { "q": "Đâu là nguyên tắc đạo đức quan trọng khi phát triển AI?", "options": ["Giảm chi phí vận hành", "Minh bạch và công bằng", "Tối đa hóa lợi nhuận", "Tăng tốc độ xử lý"], "answer": 1 },
+  { "q": "Để bảo vệ quyền riêng tư khi sử dụng AI, cần:", "options": ["Không sử dụng AI", "Chia sẻ tất cả dữ liệu cá nhân", "Chỉ sử dụng AI vào ban đêm", "Kiểm soát việc thu thập và sử dụng dữ liệu cá nhân"], "answer": 3 },
+  { "q": "Để đảm bảo AI hoạt động minh bạch, cần:", "options": ["Giải thích rõ cách AI đưa ra quyết định", "Chỉ cho phép chuyên gia sử dụng", "Không công bố kết quả", "Giấu kín thuật toán"], "answer": 0 },
+  { "q": "Elon Musk là người đồng sáng lập tổ chức nào về AI?", "options": ["Neuralink", "IBM Watson", "OpenAI", "DeepMind"], "answer": 2 },
+  { "q": "GenAI có thể tạo ra những loại nội dung nào sau đây?", "options": ["Chỉ dữ liệu số và bảng tính", "Chỉ mã lập trình", "Văn bản, hình ảnh, âm thanh, video", "Chỉ văn bản và hình ảnh"], "answer": 2 },
+  { "q": "GenAI trong lĩnh vực video mang lại lợi ích gì cho học sinh, sinh viên?", "options": ["Hỗ trợ lập trình game chuyên nghiệp", "Giảm dung lượng tệp tin trong thuyết trình", "Giúp trình bày ý tưởng trực quan qua video mà không cần kỹ năng dựng phim", "Tăng tốc độ đánh máy và nhập liệu"], "answer": 2 },
+  { "q": "Generative AI (AI tạo sinh) là gì?", "options": ["Công nghệ cho phép máy tạo ra nội dung mới dựa trên dữ liệu đầu vào", "Phần mềm hỗ trợ dịch văn bản theo từ điển cứng", "Hệ thống máy học chuyên phân loại hình ảnh sẵn có", "Công cụ dùng để lưu trữ dữ liệu học tập từ con người"], "answer": 0 },
+  { "q": "Hệ chuyên gia (Expert System) là gì?", "options": ["Một loại phần mềm kế toán", "Một loại hệ điều hành", "Một hệ thống lưu trữ dữ liệu", "Một hệ thống AI bắt chước chuyên gia con người"], "answer": 3 },
+  { "q": "Khi AI mắc sai lầm trong quyết định quan trọng, ai chịu trách nhiệm chính?", "options": ["Người thiết kế và người sử dụng AI", "Chỉ công ty phát triển AI", "Chỉ AI system", "Không ai chịu trách nhiệm"], "answer": 0 },
+  { "q": "Khi triển khai AI trong doanh nghiệp, điều quan trọng nhất là:", "options": ["Tăng tốc độ triển khai", "Giảm chi phí vận hành", "Thay thế tất cả nhân viên", "Đảm bảo tuân thủ đạo đức và pháp luật"], "answer": 3 },
+  { "q": "Loại trí tuệ nhân tạo nào có thể học và thích nghi theo thời gian?", "options": ["Adaptive AI", "Supervised AI", "Narrow AI", "Strong AI"], "answer": 3 },
+  { "q": "Lợi ích chính khi AI hỗ trợ con người trong công việc là:", "options": ["Loại bỏ hoàn toàn sai sót", "Giảm chi phí xuống 0", "Tăng hiệu quả và giảm thiểu sai sót", "Thay thế tất cả nhân viên"], "answer": 2 },
+  { "q": "Mạng nơ-ron nhân tạo mô phỏng điều gì?", "options": ["Bộ xử lý trung tâm", "Mạch điện tử", "Cấu trúc não người", "Hệ điều hành Linux"], "answer": 2 },
+  { "q": "Một chức năng chính của ChatGPT là gì?", "options": ["Trả lời câu hỏi dựa trên yêu cầu văn bản của người dùng", "Cắt ghép video chuyên nghiệp", "Thiết kế mô hình 3D trong phần mềm kỹ thuật", "Lập trình vi điều khiển cho robot công nghiệp"], "answer": 0 },
+  { "q": "Một chức năng của ChatGPT trong xử lý văn bản là gì?", "options": ["Ghi âm bài thuyết trình", "Tạo hiệu ứng hình ảnh động", "Kiểm tra chính tả thủ công", "Viết nội dung học tập, email hoặc mô tả sản phẩm"], "answer": 3 },
+  { "q": "Một số ứng dụng phổ biến của GenAI trong xử lý văn bản là gì?", "options": ["Tóm tắt văn bản dài, viết email, mô tả sản phẩm", "Tạo video hoạt hình và cắt ghép nhạc", "Lập trình phần mềm quản lý kho", "Thiết kế đồ họa và trình chiếu"], "answer": 0 },
+  { "q": "Một trong những tính năng nổi bật của Google AI VideoFX là gì?", "options": ["Biến ảnh tĩnh thành đoạn phim ngắn", "Tạo bảng tính dữ liệu học tập", "Định dạng tài liệu", "Phân tích số liệu"], "answer": 0 },
+  { "q": "Một ứng dụng của GenAI trong xử lý hình ảnh là gì?", "options": ["Biên tập file âm thanh", "Phân tích dữ liệu khách hàng", "Chuyển đổi phong cách hình ảnh để tạo hiệu ứng sáng tạo", "Kiểm tra đạo văn trong bài viết"], "answer": 2 },
+  { "q": "Mục tiêu chính của AI là gì?", "options": ["Tạo ra hệ thống có thể bắt chước hành vi con người", "Giảm chi phí phần cứng", "Tự động hóa tất cả mọi công việc", "Tăng tốc độ tính toán"], "answer": 0 },
+  { "q": "Mục tiêu chính của việc sử dụng AI có trách nhiệm là:", "options": ["Tối đa hóa lợi nhuận", "Tăng tốc độ phát triển công nghệ", "Cân bằng giữa lợi ích và rủi ro, đặt con người ở trung tâm", "Thay thế hoàn toàn con người"], "answer": 2 },
+  { "q": "Mục tiêu của việc sử dụng GenAI để tạo hình ảnh là gì?", "options": ["Dự đoán xu hướng thời tiết", "Thống kê điểm số sinh viên", "Phục vụ học tập và truyền thông một cách sáng tạo", "Tạo mã QR cho điểm danh"], "answer": 2 },
+  { "q": "Người học có thể sử dụng ChatGPT để làm gì?", "options": ["Kết nối các sàn thương mại điện tử", "Hỗ trợ tư duy, sáng tạo và học tập", "Theo dõi vận động thể chất", "Không thể sử dụng được trong giáo dục và truyền thông"], "answer": 1 },
+  { "q": "Nguyên nhân chính khiến AI không thể thay thế hoàn toàn con người là:", "options": ["Chi phí quá cao", "Luật pháp không cho phép", "Thiếu khả năng sáng tạo, đồng cảm và ra quyết định phức tạp", "Công nghệ chưa đủ mạnh"], "answer": 2 },
+  { "q": "Nguyên tắc quan trọng nhất khi sử dụng AI là:", "options": ["Giảm thiểu chi phí", "Đặt lợi ích và an toàn con người lên hàng đầu", "Tối đa hóa hiệu quả", "Tăng tốc độ xử lý"], "answer": 1 },
+  { "q": "Rủi ro nào sau đây có thể xảy ra khi phụ thuộc quá mức vào AI?", "options": ["Tăng khả năng sáng tạo của con người", "Cải thiện kỹ năng giao tiếp", "Mất kiểm soát và khả năng tư duy độc lập", "Tăng hiệu quả công việc"], "answer": 2 },
+  { "q": "Rủi ro tiềm ẩn khi AI phát triển quá nhanh là:", "options": ["Mất kiểm soát và khó dự đoán hậu quả", "Tăng hiệu quả công việc", "Cải thiện chất lượng cuộc sống", "Giảm chi phí sản xuất"], "answer": 0 },
+  { "q": "Runway ML có thể hỗ trợ người dùng làm gì trong xử lý video?", "options": ["Dịch văn bản đa ngôn ngữ", "Chỉnh sửa video thông minh, tự động hóa nhiều bước hậu kỳ", "Phân tích bảng số liệu tài chính", "Tạo biểu mẫu khảo sát trực tuyến"], "answer": 1 },
+  { "q": "Tại sao GenAI trong xử lý hình ảnh lại hữu ích đối với học sinh, sinh viên?", "options": ["Vì hỗ trợ quản lý thời khóa biểu học tập", "Vì có thể tạo mã hóa file dữ liệu bảo mật", "Vì giúp minh họa nội dung học tập bằng hình ảnh dễ hiểu và sáng tạo", "Vì giúp theo dõi tiến độ rèn luyện thể chất"], "answer": 2 },
+  { "q": "Thách thức chính khi AI được sử dụng trong tuyển dụng là:", "options": ["Giảm chi phí tuyển dụng", "Tăng tốc độ xử lý hồ sơ", "Đảm bảo công bằng và không phân biệt đối xử", "Tăng số lượng ứng viên"], "answer": 2 },
+  { "q": "Thách thức chính trong việc đảm bảo AI hoạt động đúng đạo đức là:", "options": ["Tăng khả năng lưu trữ dữ liệu", "Tăng tốc độ tính toán", "Giảm chi phí phát triển", "Đảm bảo AI công bằng với mọi người và có trách nhiệm xã hội"], "answer": 3 },
+  { "q": "Theo nội dung bài học, AI hỗ trợ con người chứ không hoàn toàn thay thế vì:", "options": ["AI không thể học hỏi và cải thiện", "AI chỉ hoạt động trong môi trường lập trình", "AI quá tốn kém để triển khai", "Con người vẫn vượt trội trong sáng tạo và đưa ra quyết định phức tạp"], "answer": 3 },
+  { "q": "Thử thách lớn nhất về quyền riêng tư khi sử dụng AI là:", "options": ["AI không thể xử lý dữ liệu cá nhân", "Thu thập và sử dụng dữ liệu cá nhân không rõ ràng", "AI luôn chia sẻ thông tin công khai", "AI không thể bảo mật thông tin"], "answer": 1 },
+  { "q": "Trong AI, \"machine learning\" là gì?", "options": ["Hệ thống học từ dữ liệu mà không cần lập trình rõ ràng", "Bộ vi xử lý thông minh", "Một loại phần mềm điều khiển robot", "Một thiết bị điện tử thông minh"], "answer": 0 },
+  { "q": "Trong AI, \"thuật toán\" có vai trò gì?", "options": ["Điều khiển hành vi và học tập của hệ thống", "Dùng để lưu trữ dữ liệu", "Là giao diện người dùng", "Tăng tốc độ mạng"], "answer": 0 },
+  { "q": "Trong tương lai, mối quan hệ lý tưởng giữa con người và AI là:", "options": ["AI hoàn toàn thay thế con người", "Con người hoàn toàn thay thế AI", "Cộng tác bổ sung lẫn nhau", "Hoạt động độc lập không liên quan"], "answer": 2 },
+  { "q": "Truy cập địa chỉ web nào sau đây là công cụ GenAI?", "options": ["https://facebook.com", "https://chat.openai.com", "https://tiki.vn", "https://youtube.com"], "answer": 1 },
+  { "q": "Turing Test dùng để làm gì?", "options": ["Kiểm tra phần cứng AI", "Kiểm tra tốc độ xử lý của AI", "Xác định xem máy có thể \"suy nghĩ như con người hay không\"", "Đo lường độ chính xác của AI"], "answer": 2 },
+  { "q": "Ứng dụng phổ biến của GenAI hiện nay là gì?", "options": ["Phân tích cảm biến công nghiệp", "Lưu trữ dữ liệu đám mây an toàn", "Quản lý tệp tin và bộ nhớ thiết bị", "Sáng tạo nội dung, giáo dục và truyền thông"], "answer": 3 },
+  { "q": "Vai trò chính của con người trong tương lai khi làm việc với AI là:", "options": ["Sáng tạo và ra quyết định cuối cùng", "Chỉ giám sát AI hoạt động", "Tắt AI khi cần thiết", "Thay thế hoàn toàn AI"], "answer": 0 },
+  { "q": "Ví dụ nào dưới đây là ứng dụng của AI?", "options": ["Máy in màu", "Máy giặt tự động", "Trợ lý ảo như Siri, Google Assistant", "Trình soạn thảo văn bản"], "answer": 2 },
+  { "q": "\"Lịch nội dung (Content Calendar)\" trong kế hoạch nội dung số có vai trò chính là gì?", "options": ["Lên ý tưởng nội dung một cách ngẫu hứng hàng ngày", "Lên kế hoạch chi tiết về ngày đăng, kênh đăng, tiêu đề, và người phụ trách để đảm bảo tính hệ thống", "Là nơi lưu trữ các nội dung đã bị từ chối", "Dùng để theo dõi các ngày lễ lớn trong năm"], "answer": 1 },
+  { "q": "Tái mục đích nội dung (Content Repurposing) là một chiến lược hiệu quả vì nó liên quan đến hoạt động nào?", "options": ["Sử dụng lại nội dung đã có để phát triển thành các định dạng mới hoặc điều chỉnh cho các nền tảng khác nhau nhằm tối ưu hóa giá trị", "Xóa bỏ các nội dung cũ để nhường chỗ cho nội dung mới", "Chỉ việc sao chép và dán nội dung từ nguồn khác", "Tạo ra một nội dung hoàn toàn mới từ ý tưởng ban đầu"], "answer": 0 },
+  { "q": "Bước đầu tiên và quan trọng nhất trong quy trình tái mục đích nội dung là gì?", "options": ["Rà soát, thu thập và đánh giá các nội dung đã có về chủ đề, định dạng và độ cập nhật", "Phân loại tài nguyên theo giấy phép bản quyền", "Thiết kế khung nội dung mới", "Biên tập và chuyển đổi nội dung"], "answer": 0 },
+  { "q": "Các nền tảng \"No-code\" như Webflow, Wix giúp người không chuyên công nghệ thông tin làm được gì?", "options": ["Viết các thuật toán phức tạp để phân tích dữ liệu", "Xây dựng các website chuyên nghiệp mà không cần phải viết code", "Thiết kế các mô hình 3D cho game", "Chỉnh sửa video và âm thanh chất lượng cao"], "answer": 1 },
+  { "q": "Cặp chuyển đổi nội dung phổ biến nào sau đây thể hiện một chiến lược tái mục đích hiệu quả?", "options": ["Một Webinar hoặc buổi hội thảo đã ghi hình chỉ có thể được chuyển đổi thành một Podcast", "Một Video YouTube dài có thể được chuyển đổi thành bài viết blog tóm tắt, các đoạn cắt ngắn cho Facebook/TikTok/Reels", "Một bài Blog dài chỉ có thể được chuyển đổi thành một Ebook", "Một Báo cáo nghiên cứu chỉ có thể được chuyển đổi thành một Infographic"], "answer": 1 },
+  { "q": "CapCut là công cụ được ưa chuộng để chỉnh sửa video ngắn trên mạng xã hội vì lý do nào?", "options": ["Vì nó sở hữu kho nhạc nền đa dạng và được cập nhật nhanh hơn các thư viện âm thanh khác", "Vì đây là phần mềm chỉnh sửa video chuyên nghiệp nhất trên máy tính", "Vì nó là công cụ duy nhất được tích hợp trực tiếp vào nền tảng TikTok", "Vì nó cung cấp nhiều hiệu ứng hợp xu hướng, dễ sử dụng và phù hợp cho video ngắn"], "answer": 3 },
+  { "q": "Công cụ nào sau đây được biết đến là một nền tảng thiết kế trực tuyến thân thiện với người dùng, cung cấp hàng ngàn mẫu (template) sẵn có cho nhiều loại hình ảnh khác nhau, phù hợp cho người không chuyên?", "options": ["Adobe Photoshop", "Adobe Illustrator", "Canva", "DaVinci Resolve"], "answer": 2 },
+  { "q": "Đâu là nguyên tắc cơ bản cần tuân thủ khi quay video bằng điện thoại để đảm bảo chất lượng?", "options": ["Luôn quay video theo chiều dọc", "Hạn chế rung lắc, đảm bảo đủ sáng và thu âm rõ ràng, không tạp âm", "Sử dụng tối đa tính năng zoom kỹ thuật số của điện thoại", "Chỉ quay ở những nơi có phong cảnh thật đẹp"], "answer": 1 },
+  { "q": "Để đảm bảo âm thanh thu được trong video rõ ràng và không lẫn tạp âm, nguyên tắc cơ bản nào cần được ưu tiên khi quay?", "options": ["Sử dụng micro ngoài nếu có thể và kiểm soát môi trường xung quanh để giảm tiếng ồn", "Giữ hình ảnh ổn định", "Tập trung vào góc quay đẹp", "Chỉ cần đảm bảo ánh sáng đủ"], "answer": 0 },
+  { "q": "Định dạng nội dung nào thường được sử dụng trên mạng xã hội để kể chuyện theo từng bước, hướng dẫn chi tiết hoặc so sánh nhiều yếu tố thông qua một chuỗi hình ảnh?", "options": ["Carousel/Album ảnh", "Podcast", "Livestream", "Infographic"], "answer": 0 },
+  { "q": "Giá trị cốt lõi của việc xây dựng \"Chân dung người dùng (Persona)\" là gì?", "options": ["Thay thế hoàn toàn việc nghiên cứu thị trường truyền thống", "Đơn giản hóa quá trình sản xuất nội dung cho mọi đối tượng", "Giúp dự đoán chính xác doanh số bán hàng trong tương lai", "Tạo ra một hình mẫu chi tiết và có cơ sở về đối tượng mục tiêu, giúp định hướng nội dung một cách cá nhân hóa và hiệu quả hơn"], "answer": 3 },
+  { "q": "Giá trị nào sau đây KHÔNG phải là một trong những loại giá trị chính mà nội dung số có thể mang lại cho người xem?", "options": ["Giải quyết vấn đề hoặc cung cấp giải pháp", "Khơi dậy động lực và cảm hứng", "Bắt buộc người xem phải thực hiện một hành động mua sắm cụ thể mà không có sự lựa chọn", "Mang lại niềm vui và sự thư giãn"], "answer": 2 },
+  { "q": "Giấy phép Creative Commons (CC) loại \"CC BY-ND\" có ý nghĩa gì?", "options": ["Cho phép sử dụng và chia sẻ lại dưới cùng một loại giấy phép", "Cho phép sử dụng nhưng không được dùng cho mục đích thương mại", "Cho phép sử dụng, chỉnh sửa và dùng cho mục đích thương mại", "Yêu cầu ghi nguồn tác giả và không được phép chỉnh sửa, thay đổi tác phẩm gốc"], "answer": 3 },
+  { "q": "Giấy phép Creative Commons (CC) nào yêu cầu người sử dụng phải ghi nguồn (Attribution) nhưng không cho phép sử dụng tác phẩm cho mục đích thương mại (NonCommercial)?", "options": ["CC BY-SA (ShareAlike)", "CC BY", "CC BY-NC (NonCommercial)", "CC BY-ND (NoDerivatives)"], "answer": 2 },
+  { "q": "Giấy phép nào cho phép sử dụng tác phẩm một cách tự do cho mọi mục đích vì tác phẩm đã hết hạn bản quyền hoặc tác giả đã từ bỏ quyền của mình?", "options": ["Public Domain", "Royalty-Free", "Creative Commons (CC)", "Rights-Managed"], "answer": 0 },
+  { "q": "Hậu quả nào sau đây là một trong những rủi ro nghiêm trọng nhất của việc vi phạm bản quyền nội dung số?", "options": ["Có thể dẫn đến việc nội dung bị gỡ bỏ, bị phạt tiền, bồi thường thiệt hại và ảnh hưởng tiêu cực đến uy tín cá nhân thương hiệu", "Nội dung sẽ được lan truyền nhanh hơn trên mạng xã hội", "Sẽ nhận được nhiều lượt thích và bình luận hơn", "Được phép sử dụng nội dung đó miễn phí vĩnh viễn"], "answer": 0 },
+  { "q": "Hoạt động nào sau đây thể hiện rõ nhất mục tiêu \"Tăng tương tác / Xây dựng cộng đồng\" của nội dung số?", "options": ["Chỉ đăng tải thông tin một chiều mà không cần phản hồi", "Phát hành thông cáo báo chí định kỳ", "Gửi email hàng loạt cho danh sách khách hàng tiềm năng", "Khuyến khích người dùng bình luận, chia sẻ quan điểm, tham gia thảo luận và các hoạt động tương tác để tạo sự gắn kết"], "answer": 3 },
+  { "q": "Kế hoạch nội dung dài hạn (Quý/Năm) chủ yếu tập trung vào việc xác định những yếu tố nào?", "options": ["Lịch đăng bài chi tiết hàng ngày và phân công nhiệm vụ cụ thể", "Phân tích phản hồi của người dùng về nội dung đã đăng", "Các công cụ sản xuất nội dung sẽ được sử dụng", "Các chủ đề lớn, chiến dịch truyền thông trọng điểm và các sự kiện quan trọng trong khoảng thời gian dài"], "answer": 3 },
+  { "q": "Khái niệm \"Bản quyền\" trong lĩnh vực nội dung số được định nghĩa chính xác nhất là gì?", "options": ["Quyền được tự do sao chép và sử dụng bất kỳ tác phẩm nào trên internet", "Quyền pháp lý độc quyền của người sáng tạo đối với tác phẩm của họ, bao gồm quyền sao chép, phân phối, biểu diễn và tạo tác phẩm phái sinh", "Quyền được chỉnh sửa tác phẩm của người khác mà không cần xin phép", "Quyền được sử dụng miễn phí mọi nội dung có sẵn trên các nền tảng số"], "answer": 1 },
+  { "q": "Khái niệm \"Lập kế hoạch nội dung\" bao hàm ý nghĩa nào sau đây?", "options": ["Chỉ việc tạo ra các ý tưởng nội dung ngẫu nhiên", "Là một quy trình có hệ thống để tổ chức, sắp xếp ý tưởng, định thời gian đăng tải và lựa chọn kênh phân phối nhằm đạt được mục tiêu cụ thể", "Chỉ là bước cuối cùng sau khi nội dung đã được sản xuất", "Đơn thuần là việc sao chép các chiến lược nội dung đã thành công của đối thủ"], "answer": 1 },
+  { "q": "Khi bạn sử dụng nội dung có bản quyền mà giấy phép cho phép, điều quan trọng nhất bạn cần thực hiện để tuân thủ là gì?", "options": ["Ghi nguồn rõ ràng theo yêu cầu của giấy phép và tuân thủ tất cả các điều khoản khác (ví dụ: không chỉnh sửa nếu là ND, không dùng thương mại nếu là NC)", "Thực hiện một vài chỉnh sửa nhỏ để tránh bị phát hiện vi phạm", "Chỉ cần tải về và sử dụng ngay lập tức", "Chia sẻ nội dung đó cho càng nhiều người càng tốt"], "answer": 0 },
+  { "q": "Khi biên tập và chuyển đổi nội dung, việc \"chuẩn hóa ngôn ngữ, tông giọng, định dạng\" có ý nghĩa gì?", "options": ["Để thay đổi hoàn toàn ý nghĩa ban đầu của nội dung", "Chỉ để làm cho nội dung dài hơn và phức tạp hơn", "Để đảm bảo nội dung mới có phong cách nhất quán, phù hợp với thương hiệu và đặc thù của nền tảng mà nó sẽ được đăng tải", "Để loại bỏ tất cả các yếu tố hình ảnh và âm thanh"], "answer": 2 },
+  { "q": "Khi đánh giá nội dung cũ để tái mục đích, việc đặt câu hỏi \"Nội dung này còn chính xác không\" có mục đích gì?", "options": ["Để phân công người chịu trách nhiệm cập nhật nội dung", "Để đảm bảo rằng các dữ liệu, số liệu thống kê và thông tin trong nội dung vẫn còn giá trị và không bị lỗi thời, cần được cập nhật nếu cần", "Để kiểm tra lỗi chính tả và ngữ pháp", "Để xác định mức độ hấp dẫn của nội dung đối với người xem"], "answer": 1 },
+  { "q": "Khi kiểm tra nguồn gốc và giấy phép sử dụng hình ảnh cho nội dung số, bạn nên ưu tiên tìm kiếm hình ảnh trên các nguồn nào để đảm bảo tính hợp pháp?", "options": ["Các trang web cung cấp ảnh miễn phí bản quyền có uy tín như Unsplash, Pexels, Pixabay, và đọc kỹ điều khoản giấy phép của chúng", "Bất kỳ hình ảnh nào tìm thấy trên Google Image", "Các trang web cá nhân hoặc diễn đàn không rõ ràng về bản quyền", "Các trang web yêu cầu đăng ký tài khoản trả phí mà không cần đọc giấy phép"], "answer": 0 },
+  { "q": "Khi một nội dung số có mục tiêu \"Xây dựng thương hiệu / Tăng nhận diện\", điều này hàm ý gì về chiến lược của nó?", "options": ["Chỉ đơn thuần là thu thập dữ liệu người dùng để bán lại", "Ưu tiên việc giáo dục người dùng về các khái niệm phức tạp", "Trực tiếp thúc đẩy hành vi mua hàng ngay lập tức", "Tập trung vào việc giới thiệu giá trị cốt lõi, hình ảnh và sự khác biệt của doanh nghiệp/sản phẩm để tạo ấn tượng lâu dài trong tâm trí công chúng"], "answer": 3 },
+  { "q": "Khi thiết kế hình ảnh cho các nền tảng khác nhau, việc \"đúng kích thước từng nền tảng\" có ý nghĩa gì?", "options": ["Mỗi nền tảng có các yêu cầu kích thước và tỷ lệ khung hình riêng, việc tuân thủ giúp hình ảnh hiển thị tối ưu, không bị cắt xén hoặc biến dạng", "Giúp hình ảnh có độ phân giải cao hơn", "Chỉ cần sử dụng một kích thước hình ảnh duy nhất và hệ thống sẽ tự động điều chỉnh", "Kích thước hình ảnh chỉ ảnh hưởng đến tốc độ tải trang, không ảnh hưởng đến hiển thị"], "answer": 0 },
+  { "q": "Khi viết nội dung hấp dẫn, việc \"đúng giọng điệu thương hiệu\" có ý nghĩa quan trọng như thế nào?", "options": ["Sao chép giọng điệu của các thương hiệu thành công khác", "Chỉ sử dụng các thuật ngữ chuyên ngành để thể hiện sự chuyên nghiệp", "Viết theo phong cách cá nhân của người viết mà không cần quan tâm đến thương hiệu", "Đảm bảo phong cách ngôn ngữ (chuyên nghiệp, thân thiện, hài hước, vv.) nhất quán với hình ảnh và giá trị mà thương hiệu muốn truyền tải"], "answer": 3 },
+  { "q": "Kỹ thuật tái mục đích nào là quá trình cô đọng nội dung gốc thành một phiên bản ngắn gọn, súc tích hơn nhưng vẫn giữ được ý chính?", "options": ["Tóm tắt (Summarize)", "Làm nổi bật (Highlight)", "Rút trích (Extract)", "Chèn (Embed)"], "answer": 0 },
+  { "q": "Kỹ thuật tái mục đích nào liên quan đến việc chọn lọc và trích dẫn một phần nhỏ, quan trọng hoặc ấn tượng từ nội dung gốc để tạo thành một nội dung độc lập mới?", "options": ["Tóm tắt (Summarize)", "Làm nổi bật (Highlight)", "Chèn (Embed)", "Rút trích (Extract)"], "answer": 3 },
+  { "q": "Loại nội dung nào có khả năng trực quan hóa dữ liệu phức tạp, thống kê và thông tin một cách dễ hiểu, hấp dẫn thông qua hình ảnh, biểu đồ và icon?", "options": ["Carousel", "Bài viết", "Podcast", "Infographic"], "answer": 3 },
+  { "q": "Loại nội dung nào phù hợp nhất để truyền tải thông tin chuyên sâu, hướng dẫn chi tiết từng bước và xây dựng uy tín chuyên môn?", "options": ["Bài viết / Blog Post", "Video ngắn trên TikTok", "Infographic tổng hợp dữ liệu", "Livestream hỏi đáp"], "answer": 0 },
+  { "q": "Lợi ích nào sau đây thể hiện rõ nhất hiệu quả của việc tái mục đích nội dung?", "options": ["Giảm thiểu sự cần thiết của việc phân tích đối tượng mục tiêu", "Tối đa hóa giá trị của nội dung đã đầu tư, tiết kiệm thời gian và nguồn lực, đồng thời mở rộng phạm vi tiếp cận khán giả", "Chỉ phù hợp cho các chiến dịch quảng cáo ngắn hạn", "Đảm bảo mọi nội dung đều trở thành xu hướng trên mạng xã hội"], "answer": 1 },
+  { "q": "Lợi ích nào sau đây thể hiện rõ nhất tầm quan trọng của việc lập kế hoạch nội dung?", "options": ["Đảm bảo mọi nội dung đều trở thành xu hướng", "Đảm bảo tính nhất quán, liên tục và hiệu quả của nội dung, đồng thời tối ưu hóa nguồn lực", "Chỉ giúp tăng số lượng nội dung được sản xuất mà không cần quan tâm chất lượng", "Giúp giảm bớt sự cần thiết của việc nghiên cứu đối tượng mục tiêu"], "answer": 1 },
+  { "q": "Lợi thế chính của Livestream trong chiến lược nội dung số là gì?", "options": ["Chỉ phù hợp cho việc bán hàng trực tuyến", "Cho phép chỉnh sửa hậu kỳ kỹ lưỡng trước khi phát hành", "Tạo sự chân thực, tương tác trực tiếp theo thời gian thực và thu hút sự chú ý ngay lập tức từ khán giả", "Giúp tối ưu hóa thứ hạng tìm kiếm trên Google"], "answer": 2 },
+  { "q": "Nền tảng nào được biết đến với sự bùng nổ của video ngắn, xu hướng nhanh, việc sử dụng âm nhạc và các thử thách giải trí để thu hút người dùng?", "options": ["LinkedIn", "TikTok", "YouTube", "Blog/Website"], "answer": 1 },
+  { "q": "Nền tảng nào sau đây nổi bật với khả năng hỗ trợ video dài, nội dung hướng dẫn chuyên sâu, vlog và là kênh phổ biến để kiếm tiền từ nội dung thông qua quảng cáo?", "options": ["YouTube", "Facebook", "Instagram", "TikTok"], "answer": 0 },
+  { "q": "Nếu bạn tìm thấy một hình ảnh đẹp trên Google Image nhưng không có thông tin rõ ràng về nguồn gốc hoặc giấy phép sử dụng, hành động đúng đắn nhất bạn nên làm là gì để tránh vi phạm bản quyền?", "options": ["Đăng hình ảnh đó lên mạng xã hội và hỏi cộng đồng về nguồn gốc", "Sử dụng ngay lập tức vì nó dễ tìm thấy", "Tự thiết kế lại hình ảnh đó mà không tham khảo bản gốc", "Thực hiện tìm kiếm ngược hình ảnh (Reverse Image Search) để cố gắng tìm nguồn gốc và thông tin giấy phép, hoặc tìm một hình ảnh thay thế có giấy phép rõ ràng"], "answer": 3 },
+  { "q": "Ngôn ngữ \"CSS\" có vai trò gì trong việc xây dựng một trang web?", "options": ["Xây dựng cấu trúc và các thành phần chính của trang web", "Tạo ra các hiệu ứng tương tác và chức năng cho trang web", "Quản lý cơ sở dữ liệu của trang web", "Dùng để trang trí, định kiểu cho trang web như màu sắc, font chữ, bố cục"], "answer": 3 },
+  { "q": "Ngôn ngữ nào sau đây đóng vai trò là \"bộ xương\" của một trang web, dùng để định nghĩa cấu trúc và các thành phần cơ bản như văn bản, hình ảnh, liên kết?", "options": ["CSS", "HTML", "JavaScript", "Python"], "answer": 1 },
+  { "q": "Ngôn ngữ nào sau đây được ví như \"bộ não\" của trang web, chịu trách nhiệm tạo ra các chức năng tương tác, hiệu ứng động và xử lý logic (ví dụ: quiz trắc nghiệm, biểu đồ tương tác, game đơn giản)?", "options": ["CSS", "JavaScript", "SQL", "HTML"], "answer": 1 },
+  { "q": "Nguyên tắc cốt lõi khi sản xuất kịch bản video là gì?", "options": ["Luôn sử dụng các hiệu ứng hình ảnh phức tạp nhất", "Kịch bản càng dài và chi tiết càng tốt, không giới hạn thời lượng", "Chỉ cần tập trung vào lời thoại mà không cần quan tâm đến hình ảnh", "Phải có cấu trúc Mở đầu, Diễn biến, và Kết thúc kèm theo lời kêu gọi hành động rõ ràng"], "answer": 3 },
+  { "q": "Nguyên tắc cốt lõi nào cần được ưu tiên hàng đầu khi sản xuất bất kỳ nội dung số nào?", "options": ["Nội dung phải được đăng tải với tần suất cao nhất có thể", "Nội dung phải hướng đến việc mang lại giá trị thật sự (giúp đỡ, giải trí, truyền cảm hứng, thúc đẩy hành động) cho người xem", "Nội dung phải sử dụng các công nghệ tiên tiến nhất", "Nội dung phải có độ dài tối đa để truyền tải đầy đủ thông tin"], "answer": 1 },
+  { "q": "Podcast đặc biệt phù hợp với đối tượng người nghe nào?", "options": ["Những người muốn tương tác trực tiếp với người sáng tạo nội dung", "Những người chỉ thích xem nội dung trực quan", "Những người có lịch trình bận rộn, muốn tiếp thu thông tin khi đang di chuyển hoặc làm các công việc khác", "Những người ưu tiên đọc các bài viết dài"], "answer": 2 },
+  { "q": "Tầm quan trọng của hình ảnh trong nội dung số, đặc biệt trên các nền tảng mạng xã hội, được thể hiện rõ nhất qua điều gì?", "options": ["Hình ảnh là yếu tố thu hút sự chú ý ban đầu, có khả năng truyền tải thông điệp nhanh chóng và tạo ấn tượng mạnh mẽ", "Hình ảnh chỉ có vai trò trang trí, không có giá trị thông tin", "Hình ảnh giúp nội dung trông chuyên nghiệp hơn nhưng không ảnh hưởng đến sự thu hút", "Hình ảnh là yếu tố duy nhất quyết định sự thành công của nội dung"], "answer": 0 },
+  { "q": "Thành phần nào sau đây ít có khả năng vi phạm bản quyền nhất khi bạn sử dụng trong sản phẩm của mình?", "options": ["Một bài hát nổi tiếng đang thịnh hành trên bảng xếp hạng", "Một hình ảnh bạn tự chụp bằng máy ảnh của mình", "Logo của một công ty đa quốc gia", "Một đoạn phim cắt từ một bộ phim bom tấn của Hollywood"], "answer": 1 },
+  { "q": "Thành phần nào sau đây trong một sản phẩm nội dung số (video, bài viết, ứng dụng, ebook) có khả năng cao vướng bản quyền nếu không phải do bạn tự tạo ra hoặc không có giấy phép sử dụng?", "options": ["Nhạc nền bạn sử dụng từ một bài hát nổi tiếng mà không có sự cho phép", "Hình ảnh bạn tự chụp bằng điện thoại", "Đoạn văn bản bạn tự viết dựa trên kiến thức của mình", "Logo của chính thương hiệu bạn"], "answer": 0 },
+  { "q": "Trong bối cảnh phát triển nội dung số, khái niệm \"Nội dung số\" được hiểu đúng nhất là gì?", "options": ["Chỉ các ấn phẩm in ấn được số hóa thành PDF", "Bất kỳ thông tin nào được tạo ra, lưu trữ và truyền tải dưới dạng kỹ thuật số, có thể truy cập qua các thiết bị điện tử", "Các chương trình phát sóng truyền hình được ghi lại", "Chỉ các tài liệu học thuật được xuất bản trực tuyến"], "answer": 1 },
+  { "q": "Trong các bước lập kế hoạch nội dung hiệu quả, bước nào được coi là điểm khởi đầu và định hướng cho toàn bộ quá trình?", "options": ["Xây dựng Lịch Nội dung (Content Calendar)", "Nghiên cứu Chủ đề và Từ khóa", "Lên ý tưởng nội dung (Brainstorming)", "Xác định Mục tiêu và Đối tượng"], "answer": 3 },
+  { "q": "Trong một kịch bản video ngắn (ví dụ TikTok 15s), phần \"Mở đầu (Hook)\" đóng vai trò thiết yếu nào?", "options": ["Kêu gọi người xem thực hiện hành động cụ thể ở cuối video", "Thu hút sự chú ý của người xem ngay lập tức trong vài giây đầu tiên để khuyến khích họ tiếp tục xem", "Giới thiệu chi tiết về người sáng tạo nội dung", "Tổng kết toàn bộ nội dung video một cách ngắn gọn"], "answer": 1 },
+  { "q": "Trong quá trình thực hiện lập trình cho nội dung số, khâu nào có mục tiêu chính là xác nhận rằng sản phẩm hoạt động đúng theo thiết kế ban đầu, phát hiện và sửa chữa các lỗi (bug)?", "options": ["Khâu Phân tích yêu cầu", "Khâu Cài đặt / Lập trình (Implementation/Coding)", "Khâu Kiểm thử (Testing)", "Khâu Thiết kế (Design)"], "answer": 2 },
+  { "q": "Trong quy trình phát triển một sản phẩm lập trình, \"Wireframe\" và \"Mockup\" được tạo ra ở khâu nào?", "options": ["Khâu Thiết kế (Design)", "Khâu Kiểm thử (Testing)", "Khâu Bảo trì (Maintenance)", "Khâu Cài đặt / Lập trình (Implementation/Coding)"], "answer": 0 },
+  { "q": "Ưu điểm nổi bật nhất của Video trong phát triển nội dung số là gì?", "options": ["Chi phí sản xuất luôn thấp hơn các định dạng khác", "Dễ dàng tối ưu hóa cho công cụ tìm kiếm mà không cần nội dung văn bản", "Khả năng tương tác cao, truyền tải thông điệp đa chiều và tạo sự kết nối cảm xúc mạnh mẽ với khán giả", "Chỉ phù hợp cho mục đích giải trí đơn thuần"], "answer": 2 },
+  { "q": "Vai trò nào sau đây thể hiện rõ nhất tầm quan trọng của nội dung số trong việc kết nối cộng đồng hiện nay?", "options": ["Thúc đẩy sự tương tác, chia sẻ và gắn kết giữa các cá nhân, nhóm trên không gian mạng", "Tạo ra các nền tảng độc quyền cho một nhóm người dùng cụ thể", "Chỉ đơn thuần là nơi lưu trữ thông tin cá nhân", "Thay thế hoàn toàn các hình thức giao tiếp trực tiếp"], "answer": 0 },
+  { "q": "Vì sao việc có hiểu biết cơ bản về lập trình lại hữu ích cho sinh viên không chuyên Công nghệ thông tin trong lĩnh vực phát triển nội dung số?", "options": ["Để họ có thể tự mình xây dựng các hệ thống phần mềm phức tạp", "Giúp họ tạo ra các nội dung tương tác độc đáo, hiểu rõ hơn cách các nền tảng kỹ thuật số hoạt động và làm việc hiệu quả hơn với các lập trình viên", "Để họ có thể thay thế hoàn toàn vai trò của các chuyên gia công nghệ thông tin", "Chỉ để hỗ trợ việc sửa chữa các thiết bị điện tử"], "answer": 1 },
+  { "q": "Việc phân tích mục tiêu và đối tượng được coi là \"bước nền tảng\" vì lý do cốt lõi nào?", "options": ["Nó là quy định bắt buộc của tất cả các nền tảng số", "Chỉ giúp giảm thiểu chi phí quảng cáo mà không ảnh hưởng đến chất lượng nội dung", "Chủ yếu để xác định xu hướng thị trường mà không cần quan tâm đến người dùng", "Giúp định hình chiến lược nội dung, đảm bảo sự phù hợp và hiệu quả, đồng thời tối ưu hóa việc sử dụng nguồn lực"], "answer": 3 },
+  { "q": "Việc tối ưu hóa nội dung cho từng nền tảng cụ thể khi phân tích đặc điểm người dùng là cần thiết vì lý do nào?", "options": ["Chỉ áp dụng cho các chiến dịch quảng cáo trả phí", "Để đảm bảo nội dung có thể được đăng tải mà không cần chỉnh sửa", "Giúp giảm thiểu sự cạnh tranh giữa các loại nội dung", "Mỗi nền tảng có đặc thù về định dạng, hành vi người dùng và thuật toán, do đó tối ưu hóa giúp nội dung đạt hiệu quả tiếp cận và tương tác cao nhất"], "answer": 3 },
+  { "q": "Viết nội dung \"phù hợp nền tảng SEO\" có vai trò gì trong việc tiếp cận khán giả?", "options": ["Tối ưu hóa nội dung để các công cụ tìm kiếm (như Google) dễ dàng nhận diện và xếp hạng cao, từ đó tăng khả năng được tìm thấy bởi người dùng", "Chỉ áp dụng cho các bài viết quảng cáo trả phí", "Đảm bảo nội dung luôn ngắn gọn và súc tích", "Giúp bài viết nổi bật trên mạng xã hội thông qua hashtag"], "answer": 0 },
+  { "q": "Yếu tố \"Nhân khẩu học\" trong phân tích đối tượng tiếp cận nội dung số cung cấp thông tin cơ bản nào về người dùng?", "options": ["Hành vi mua sắm trực tuyến và sở thích giải trí", "Nỗi sợ hãi và mong muốn tiềm ẩn", "Các ứng dụng di động mà họ sử dụng thường xuyên", "Tuổi tác, giới tính, trình độ học vấn, nghề nghiệp và mức thu nhập"], "answer": 3 },
+  { "q": "Yếu tố nào KHÔNG phải là tiêu chí quan trọng khi thiết kế hình ảnh cho nội dung số?", "options": ["Đồng nhất với nhận diện thương hiệu (logo, màu sắc, font chữ)", "Bắt mắt, thu hút và có bố cục hài hòa", "Đúng kích thước yêu cầu của từng nền tảng", "Sử dụng càng nhiều màu sắc và font chữ càng tốt để nổi bật"], "answer": 3 },
+  { "q": "Yếu tố nào sau đây được coi là KHÔNG phải là một phần cấu thành quan trọng của kịch bản video?", "options": ["Tổng chi phí dự kiến để sản xuất video", "Ý tưởng chủ đạo và thông điệp muốn truyền tải", "Ghi chú về âm thanh, nhạc nền và hiệu ứng hình ảnh", "Cấu trúc video bao gồm mở đầu, diễn biến và kết thúc"], "answer": 0 },
+  { "q": "\"Authority\" trong mô hình CRAAP đề cập đến:", "options": ["Bài viết có lượt xem cao", "Nguồn dữ liệu có địa chỉ đẹp", "Tác giả hoặc tổ chức có chuyên môn uy tín", "Thông tin được chia sẻ nhiều"], "answer": 2 },
+  { "q": "AI kết hợp với các công cụ kiểm tra sự thật giúp:", "options": ["Lọc dữ liệu hình ảnh", "Sao chép tài liệu tự động", "Tạo thêm thông tin giả", "Tăng tốc độ kiểm chứng và đánh giá thông tin nhanh chóng"], "answer": 3 },
+  { "q": "AI như ChatGPT có thể hỗ trợ gì trong đánh giá thông tin?", "options": ["So sánh và phân tích nội dung, hỗ trợ nhận diện thông tin sai lệch", "Tạo nội dung tự động không kiểm chứng", "Tải dữ liệu từ internet", "Lọc thư rác"], "answer": 0 },
+  { "q": "Câu nào sau đây mô tả đúng về dữ liệu bán cấu trúc?", "options": ["Chỉ chứa số", "Có cấu trúc linh hoạt như XML, JSON", "Không có tổ chức", "Không thể xử lý tự động"], "answer": 1 },
+  { "q": "Công cụ AI nên được sử dụng như thế nào trong đánh giá dữ liệu?", "options": ["Sao chép toàn bộ thông tin", "Tạo ra dữ liệu giả", "Tự động đăng bài lên mạng", "Hỗ trợ chứ không thay thế hoàn toàn kiểm chứng thủ công"], "answer": 3 },
+  { "q": "Công cụ kiểm tra tin đồn phổ biến trên thế giới là:", "options": ["TikTok", "Zalo", "Canva", "Snopes"], "answer": 3 },
+  { "q": "Công cụ nào dùng để kiểm tra độ tin cậy của thông tin trực tuyến?", "options": ["Photoshop", "Google Fact Check Tools", "Excel", "Google Translate"], "answer": 1 },
+  { "q": "Công cụ nào không dùng để tìm kiếm dữ liệu học thuật?", "options": ["ResearchGate", "Google Scholar", "PubMed", "Facebook"], "answer": 3 },
+  { "q": "Công cụ nào sau đây giúp đồng bộ và chia sẻ dữ liệu trong nhóm?", "options": ["Adobe Acrobat", "VLC Media Player", "Dropbox", "Microsoft Paint"], "answer": 2 },
+  { "q": "Công cụ nào thường được sử dụng để quản lý dữ liệu?", "options": ["Microsoft Excel", "Phần mềm chỉnh sửa ảnh", "Trình duyệt web", "Trình phát video"], "answer": 0 },
+  { "q": "CRAAP giúp đánh giá thông tin dựa trên các yếu tố sau, TRỪ:", "options": ["Relevance", "Accuracy", "Currency", "Efficiency"], "answer": 3 },
+  { "q": "Dữ liệu (data) là gì?", "options": ["Văn bản khoa học có nguồn gốc rõ ràng", "Thông tin đã được phân tích kỹ lưỡng", "Các con số, ký hiệu chưa qua xử lý", "Trí thức được tổng hợp"], "answer": 2 },
+  { "q": "Dữ liệu bị trùng lặp có thể gây ra vấn đề gì trong phân tích?", "options": ["Làm sai lệch kết quả thống kê", "Kết quả chính xác hơn", "Giúp tìm kiếm nhanh hơn", "Tăng dung lượng lưu trữ"], "answer": 0 },
+  { "q": "Dữ liệu cá nhân cần được quản lý như thế nào?", "options": ["Chia sẻ rộng rãi để tiện lợi", "Bảo vệ bằng mật khẩu và sao lưu định kỳ", "Không cần bảo mật, ai cũng được truy cập", "Xóa hết dữ liệu sau khi dùng"], "answer": 1 },
+  { "q": "Dữ liệu có cấu trúc thường được lưu trữ trong:", "options": ["Tệp PDF", "Ảnh JPEG", "Cơ sở dữ liệu quan hệ (SQL)", "Tệp MP3"], "answer": 2 },
+  { "q": "Dữ liệu được chia sẻ an toàn khi:", "options": ["Được gửi qua mạng công cộng", "Không thiết lập mật khẩu", "Có kiểm soát quyền truy cập", "Chia sẻ dưới dạng công khai"], "answer": 2 },
+  { "q": "Đặc điểm của dữ liệu số là:", "options": ["Không thể chỉnh sửa", "Tồn tại dưới dạng vật lý", "Khó sao lưu và truy xuất", "Dễ sao chép và phân phối"], "answer": 3 },
+  { "q": "Đâu là một ví dụ về chiến lược duyệt tài liệu số hiệu quả?", "options": ["Tập trung vào tiêu đề và mục lục", "Chỉ xem phần cuối tài liệu", "Đọc theo trình tự thời gian", "Xem toàn bộ nội dung không bỏ sót"], "answer": 0 },
+  { "q": "Đâu là rủi ro nếu không kiểm tra độ chính xác của dữ liệu?", "options": ["Mất thời gian tìm kiếm", "Gây ra quyết định sai lệch hoặc thông tin sai", "Tăng lượt xem website", "Giảm dung lượng lưu trữ"], "answer": 1 },
+  { "q": "Đọc lướt hiệu quả giúp:", "options": ["Loại bỏ nội dung không cần thiết", "Tìm thông tin quan trọng nhanh chóng", "Đọc toàn bộ tài liệu chi tiết", "Làm chậm quá trình đọc"], "answer": 1 },
+  { "q": "Gemini là công cụ gì?", "options": ["Công cụ dịch thuật", "Trình duyệt web", "AI hỗ trợ kiểm tra và đánh giá nội dung số", "Phần mềm chỉnh sửa ảnh"], "answer": 2 },
+  { "q": "Google Dataset Search giúp:", "options": ["Tìm kiếm cơ sở dữ liệu công khai", "Tạo dữ liệu mới", "Tìm kiếm ảnh chất lượng cao", "Tìm file Word"], "answer": 0 },
+  { "q": "Khi cần tìm bài báo khoa học, bạn nên dùng:", "options": ["Google Maps", "Google Scholar", "YouTube", "Facebook"], "answer": 1 },
+  { "q": "Khi chia sẻ dữ liệu trong tổ chức, cần làm gì?", "options": ["Đăng dữ liệu lên mạng xã hội công khai", "Chia sẻ cho tất cả mọi người mà không kiểm soát", "Thiết lập quyền truy cập phù hợp cho từng người dùng", "Chia sẻ qua email không mã hóa"], "answer": 2 },
+  { "q": "Khi làm việc nhóm với dữ liệu số, điều quan trọng nhất là:", "options": ["Thiết lập quyền truy cập và chia sẻ dữ liệu rõ ràng", "Mỗi người dùng một phiên bản dữ liệu khác nhau", "Lưu dữ liệu trên máy cá nhân không chia sẻ", "Gửi dữ liệu qua USB cá nhân"], "answer": 0 },
+  { "q": "Khi phân tích dữ liệu, nếu phát hiện nhiều dữ liệu bị thiếu, bạn nên:", "options": ["Bỏ qua những phần thiếu đó", "Thêm dữ liệu giả mạo để đầy đủ", "Xóa toàn bộ tập dữ liệu", "Làm sạch và bổ sung dữ liệu hợp lệ nếu có thể"], "answer": 3 },
+  { "q": "Khi phân tích dữ liệu, việc phát hiện dữ liệu nhiều có ý nghĩa gì?", "options": ["Không cần thiết", "Làm tăng tính đa dạng dữ liệu", "Có thể bỏ qua vì ít ảnh hưởng", "Góp phần làm sai lệch kết quả nếu không xử lý"], "answer": 3 },
+  { "q": "Khi quản lý phiên bản tài liệu, bạn nên:", "options": ["Không lưu phiên bản nào cả", "Gửi tài liệu qua email mà không đặt tên phiên bản", "Chỉ giữ phiên bản mới nhất, xóa hết các bản cũ", "Luôn lưu giữ các phiên bản khác nhau để theo dõi thay đổi"], "answer": 3 },
+  { "q": "Khi sử dụng từ khóa tìm kiếm, nên:", "options": ["Gõ sai chính tả để thử", "Gõ cả đoạn văn", "Kết hợp từ khóa chính xác và toán tử logic", "Chỉ dùng từ phổ thông"], "answer": 2 },
+  { "q": "Khi thấy một thông tin mâu thuẫn với nguồn khác, bạn nên làm gì?", "options": ["Kiểm tra thêm nhiều nguồn khác để đối chiếu", "Chia sẻ ngay lập tức", "Xóa thông tin đó", "Tin ngay nguồn đầu tiên"], "answer": 0 },
+  { "q": "Kỹ thuật nào sau đây giúp duyệt web hiệu quả?", "options": ["Bỏ qua phần giới thiệu", "Sử dụng mục lục và tìm kiếm từ khóa", "Đọc từng từ", "Xem toàn bộ hình ảnh"], "answer": 1 },
+  { "q": "Kỹ thuật nào sau đây là một phương pháp tìm kiếm nâng cao trên Google?", "options": ["Sử dụng dấu ngoặc kép để tìm cụm từ chính xác", "Chỉ gõ câu hỏi đầy đủ", "Gõ một từ khóa duy nhất không dấu", "Truy cập các trang web đầu tiên mà không đọc mô tả"], "answer": 0 },
+  { "q": "Lập kế hoạch sao lưu dữ liệu cần chú ý điều gì?", "options": ["Chỉ sao lưu dữ liệu quan trọng nhất một lần", "Sao lưu đều đặn và lưu trữ ở nhiều nơi khác nhau", "Lưu trữ sao lưu trên cùng một thiết bị với dữ liệu gốc", "Sao lưu một lần là đủ mãi mãi"], "answer": 1 },
+  { "q": "Loại dữ liệu nào có cấu trúc không nghiêm ngặt nhưng vẫn có tổ chức?", "options": ["Có cấu trúc", "Phi cấu trúc", "Bán cấu trúc", "Số liệu thống kê"], "answer": 2 },
+  { "q": "Lưu trữ dữ liệu không an toàn có thể dẫn đến:", "options": ["Tối ưu hóa tài nguyên", "Tăng hiệu suất", "Giảm chi phí", "Rò rỉ thông tin cá nhân"], "answer": 3 },
+  { "q": "Mô hình CRAAP dùng để đánh giá điều gì?", "options": ["Khả năng lưu trữ dữ liệu", "Độ phổ biến của dữ liệu", "Độ tin cậy và chính xác của thông tin", "Tốc độ tải trang web"], "answer": 2 },
+  { "q": "Một công cụ phổ biến để lưu trữ và sao lưu dữ liệu trực tuyến là:", "options": ["Photoshop", "Microsoft PowerPoint", "VLC Media Player", "Google Drive"], "answer": 3 },
+  { "q": "Một đặc điểm nổi bật của dữ liệu số là:", "options": ["Dễ bị phân rã", "Không thể sao chép", "Dễ lưu trữ và truy xuất", "Chỉ tồn tại trên giấy"], "answer": 2 },
+  { "q": "Một trong các tiêu chí quan trọng khi lưu trữ dữ liệu là:", "options": ["Chỉ lưu trữ dữ liệu văn bản", "Độ an toàn và khả năng phục hồi khi mất dữ liệu", "Tốc độ truy cập thấp", "Dung lượng lưu trữ nhỏ nhất có thể"], "answer": 1 },
+  { "q": "Mục đích chính của làm sạch dữ liệu là gì?", "options": ["Cải thiện độ chính xác và chất lượng phân tích dữ liệu", "Tăng số lượng dữ liệu", "Thay đổi dữ liệu gốc", "Giảm dung lượng lưu trữ"], "answer": 0 },
+  { "q": "Mục đích của sao lưu dữ liệu là:", "options": ["Tạo thêm dữ liệu mới", "Tăng tốc độ truy cập dữ liệu", "Xóa dữ liệu không cần thiết", "Đảm bảo dữ liệu không bị mất khi xảy ra sự cố"], "answer": 3 },
+  { "q": "Phân loại thông tin sai lệch gồm:", "options": ["Thông tin chính xác, minh bạch", "Thông tin giả mạo, thông tin bị thao túng", "Thông tin từ cơ quan chính phủ", "Thông tin được xác nhận khoa học"], "answer": 1 },
+  { "q": "Phương án nào là quy trình sao lưu dữ liệu hợp lý?", "options": ["Không cần sao lưu nếu dữ liệu nhỏ", "Sao lưu dữ liệu một lần rồi để đó", "Sao lưu định kỳ và kiểm tra tính toàn vẹn của bản sao lưu", "Chỉ sao lưu dữ liệu văn bản, không sao lưu ảnh hay video"], "answer": 2 },
+  { "q": "Phương pháp nào giúp bảo mật thông tin hiệu quả nhất?", "options": ["Chia sẻ mật khẩu với người khác", "Đăng nhập vào các trang không an toàn", "Lưu mật khẩu dưới dạng file văn bản trên máy tính", "Sử dụng mật khẩu mạnh và xác thực hai yếu tố"], "answer": 3 },
+  { "q": "Phương pháp SIFT gồm các bước nào?", "options": ["Stop, Ignore, Find, Try", "Search, Identify, Filter, Test", "Select, Inspect, Filter, Test", "Stop, Investigate, Find, Trace"], "answer": 3 },
+  { "q": "Phương pháp xác thực hai yếu tố giúp:", "options": ["Đơn giản hóa quy trình đăng nhập", "Xóa dữ liệu tự động", "Chia sẻ mật khẩu với nhiều người", "Tăng bảo mật khi đăng nhập vào hệ thống"], "answer": 3 },
+  { "q": "Quản lý dữ liệu cá nhân bao gồm việc:", "options": ["Sử dụng công cụ để tổ chức và bảo vệ dữ liệu cá nhân", "Xóa toàn bộ dữ liệu sau khi sử dụng", "Chia sẻ dữ liệu cá nhân công khai trên mạng xã hội", "Lưu trữ mọi dữ liệu mà không tổ chức"], "answer": 0 },
+  { "q": "Quản lý dữ liệu tốt sẽ giúp:", "options": ["Tăng thời gian xử lý", "Làm giảm năng suất", "Làm dữ liệu khó truy cập hơn", "Dễ tìm kiếm và bảo vệ thông tin quan trọng"], "answer": 3 },
+  { "q": "Quản lý phiên bản trong chia sẻ dữ liệu giúp:", "options": ["Tạo dữ liệu mới không kiểm soát", "Tăng dung lượng lưu trữ", "Xóa dữ liệu cũ tự động", "Giúp người dùng theo dõi thay đổi và tránh nhầm lẫn dữ liệu"], "answer": 3 },
+  { "q": "Quy tắc nào sau đây quan trọng trong quản lý dữ liệu cá nhân?", "options": ["Chia sẻ toàn bộ dữ liệu với mọi người", "Không đặt mật khẩu cho dữ liệu", "Sắp xếp dữ liệu theo mục đích sử dụng và bảo mật phù hợp", "Lưu trữ dữ liệu không có cấu trúc"], "answer": 2 },
+  { "q": "Quyền riêng tư liên quan đến:", "options": ["Tự do sao chép dữ liệu người khác", "Việc chia sẻ công khai dữ liệu cá nhân", "Việc bảo vệ dữ liệu cá nhân không bị truy cập trái phép", "Tăng tốc độ truy cập internet"], "answer": 2 },
+  { "q": "Quyền truy cập dữ liệu nên được cấp dựa trên:", "options": ["Người có kinh nghiệm nhất trong nhóm", "Mọi người đều có quyền truy cập đầy đủ", "Ai yêu cầu trước thì cấp trước", "Yêu cầu công việc và mức độ bảo mật cần thiết"], "answer": 3 },
+  { "q": "Sao lưu dữ liệu giúp giảm rủi ro:", "options": ["Truy cập dữ liệu nhanh hơn", "Tăng dung lượng ổ cứng", "Tạo dữ liệu mới", "Mất dữ liệu do sự cố kỹ thuật hoặc lỗi người dùng"], "answer": 3 },
+  { "q": "Scraping là:", "options": ["Tự động thu thập dữ liệu từ web", "Đọc dữ liệu thủ công", "Sao chép tài liệu từ file PDF", "Tạo hình ảnh từ dữ liệu"], "answer": 0 },
+  { "q": "Sử dụng Snopes giúp:", "options": ["Viết mã Python", "Tạo báo cáo thống kê", "Kiểm tra thông tin giả mạo, tin đồn trên mạng", "Tìm kiếm dữ liệu khoa học"], "answer": 2 },
+  { "q": "Thông tin bị thao túng là gì?", "options": ["Thông tin chính xác, cập nhật", "Thông tin bị chỉnh sửa hoặc bóp méo mục đích gây hiểu lầm", "Thông tin không có nguồn gốc", "Thông tin khoa học đã kiểm chứng"], "answer": 1 },
+  { "q": "Thông tin có tính \"Authority\" (quyền uy) trong CRAAP có nghĩa là:", "options": ["Được tác giả hoặc tổ chức có chuyên môn cung cấp", "Có nhiều hình ảnh minh họa", "Dễ đọc và hiểu", "Được xuất bản gần đây"], "answer": 0 },
+  { "q": "Thông tin giả mạo thường có đặc điểm nào?", "options": ["Được cập nhật liên tục", "Được đăng trên website chính thống", "Có dấu hiệu sai lệch, gây hiểu lầm hoặc cố tình sai sự thật", "Được xác thực bởi nhiều nguồn đáng tin cậy"], "answer": 2 },
+  { "q": "Thông tin khác dữ liệu ở điểm nào sau đây?", "options": ["Được xử lý để có ý nghĩa trong ngữ cảnh cụ thể", "Có tính phí cấu trúc", "Chỉ là tập hợp ký tự", "Chưa có ngữ cảnh cụ thể"], "answer": 0 },
+  { "q": "Thư viện Python nào hỗ trợ phân tích dữ liệu có cấu trúc?", "options": ["Django", "Pandas", "Matplotlib", "NumPy"], "answer": 1 },
+  { "q": "Tiêu chí \"Relevance\" trong CRAAP nghĩa là:", "options": ["Thời gian cập nhật thông tin", "Mức độ phù hợp của thông tin với nhu cầu sử dụng", "Độ phổ biến của nguồn thông tin", "Độ chính xác của dữ liệu"], "answer": 1 },
+  { "q": "Tiêu chí nào không thuộc mô hình CRAAP?", "options": ["Popularity (Độ phổ biến)", "Relevance (Sự phù hợp)", "Accuracy (Độ chính xác)", "Currency (Tính cập nhật)"], "answer": 0 },
+  { "q": "Toán tử \"filetype:pdf\" có tác dụng gì?", "options": ["Tìm thông tin trên mạng xã hội", "Giới hạn kết quả theo năm", "Tìm file hình ảnh", "Tìm file định dạng PDF"], "answer": 3 },
+  { "q": "Toán tử \"site:\" trong Google giúp:", "options": ["Tìm kiếm ảnh minh họa", "Tìm file Excel", "Tìm kiếm trong một trang web cụ thể", "Hiển thị kết quả mới nhất"], "answer": 2 },
+  { "q": "Toán tử nào sau đây giúp loại trừ một từ khóa khỏi kết quả tìm kiếm trên Google?", "options": ["\"\" (dấu ngoặc kép)", "AND", "- (dấu trừ)", "OR"], "answer": 2 },
+  { "q": "Tri thức là:", "options": ["Dữ liệu chưa xử lý", "Thông tin trích xuất từ video", "Văn bản dạng PDF", "Sự hiểu biết rút ra từ thông tin"], "answer": 3 },
+  { "q": "Trong mô hình CRAAP, \"Currency\" nghĩa là gì?", "options": ["Nguồn gốc của dữ liệu", "Mức độ phổ biến", "Độ chính xác", "Tính cập nhật của thông tin"], "answer": 3 },
+  { "q": "Trong quản lý phiên bản tài liệu, tốt nhất là:", "options": ["Xóa phiên bản cũ để tiết kiệm bộ nhớ", "Không cần đặt tên", "Chỉ dùng tên file mặc định", "Đặt tên phiên bản và lưu theo thời gian"], "answer": 3 },
+  { "q": "Từ khóa được đặt trong dấu ngoặc kép (\" \") có tác dụng gì?", "options": ["Tìm kiếm chính xác cụm từ", "Tìm trong trang web cụ thể", "Tìm các từ gần giống", "Bỏ qua cụm từ"], "answer": 0 },
+  { "q": "Ví dụ nào sau đây là dữ liệu phi cấu trúc?", "options": ["Tệp XML", "Video bài giảng", "File CSV", "Bảng Excel có cột và hàng rõ ràng"], "answer": 1 },
+  { "q": "Việc bảo mật dữ liệu bao gồm:", "options": ["Cho phép truy cập tự do", "Lưu dữ liệu trên thiết bị công cộng", "Mã hóa dữ liệu và kiểm soát truy cập", "Không sử dụng mật khẩu"], "answer": 2 },
+  { "q": "Việc sử dụng từ khóa tìm kiếm không chính xác có thể gây:", "options": ["Kết quả tìm kiếm chính xác hơn", "Tăng tốc độ truy cập", "Tăng uy tín kết quả", "Kết quả không liên quan hoặc thiếu thông tin"], "answer": 3 }
+    ];
+
+    // Logic Random và Chọn 50 câu
+    let quizData = allQuestions.sort(() => Math.random() - 0.5).slice(0, 50);
+let currentIdx = 0;
+let score = 0;
+let answered = false; // Biến kiểm soát xem đã trả lời chưa
+
+function renderQuestion() {
+    answered = false; // Reset trạng thái
+    const q = quizData[currentIdx];
+    document.getElementById("question-text").innerText = `${currentIdx + 1}. ${q.q}`;
+    const list = document.getElementById("options-list");
+    list.innerHTML = "";
+    
+    // Ẩn nút Next/Submit cho đến khi chọn xong
+    document.getElementById("next-btn").style.display = "none";
+    document.getElementById("submit-btn").style.display = "none";
+
+    q.options.forEach((opt, i) => {
+        let li = document.createElement("li");
+        li.className = "option";
+        li.innerText = opt;
+        li.onclick = () => checkAnswer(i, li);
+        list.appendChild(li);
+    });
+}
+
+function checkAnswer(selectedIndex, li) {
+    if (answered) return; // Nếu đã chọn rồi thì không cho chọn tiếp
+    answered = true;
+
+    const q = quizData[currentIdx];
+    const options = document.querySelectorAll('.option');
+
+    // Tô màu đáp án đúng (Xanh)
+    options[q.answer].classList.add('correct');
+
+    // Nếu chọn sai thì tô đỏ đáp án đã chọn
+    if (selectedIndex !== q.answer) {
+        li.classList.add('wrong');
+    } else {
+        score++;
+    }
+
+    // Vô hiệu hóa tất cả các option
+    options.forEach(el => el.classList.add('disabled'));
+
+    // Hiển thị nút Next hoặc Submit
+    if (currentIdx < quizData.length - 1) {
+        document.getElementById("next-btn").style.display = "block";
+    } else {
+        document.getElementById("submit-btn").style.display = "block";
+    }
+}
+
+function nextQuestion() {
+    currentIdx++;
+    renderQuestion();
+}
+
+function showScore() {
+    document.getElementById("quiz-box").style.display = "none";
+    const resDiv = document.getElementById("result");
+    resDiv.style.display = "block";
+    const points = (score / quizData.length) * 10;
+    
+    let html = `Kết quả: <b>${points.toFixed(1)}/10 điểm</b><br>`;
+    if(points >= 9) {
+        html += `<br><span style="color: #34a853; font-weight:bold;">Em châm giỏi vcl, người đâu thưởng Koi Thé! 🥤</span>`;
+    } else {
+        html += `<br>Cố gắng lên nhé bbi châm IU IU IU! ❤️‍🔥 được 9Đ trở lên có bất ngờ`;
+    }
+    resDiv.innerHTML = html;
+}
+
+renderQuestion();
+</script>
+</body>
+</html>
